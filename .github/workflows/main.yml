@@ -30,7 +30,8 @@ jobs:
       - uses: actions/checkout@v3
       - run: brew install ninja
 
-      - run: git clone https://code.qt.io/qt/qt5.git \
+      - run: |
+          git clone https://code.qt.io/qt/qt5.git \
           -b v${{ env.QT_VERSION }} ${{ env.QT_SRC_DIR }}
 
       - working-directory: ${{ env.QT_SRC_DIR }}
