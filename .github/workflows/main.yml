@@ -17,10 +17,10 @@ jobs:
   mac:
     name: Mac
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-11, macos-12]
     runs-on: ${{ matrix.os }}
-    fail-fast: false
     steps:
       - name: set environment variables
         run: |
