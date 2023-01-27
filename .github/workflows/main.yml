@@ -20,6 +20,7 @@ jobs:
       matrix:
         os: [macos-11, macos-12]
     runs-on: ${{ matrix.os }}
+    fail-fast: false
     steps:
       - name: set environment variables
         run: |
@@ -78,7 +79,7 @@ jobs:
       - working-directory: ${{ env.QT_SRC_DIR }}
         run: ninja install
 
-      - working-directory: ${{ env.QT_OUTPUT_DIR }}
+      - working-directory: ${{ env.QT_OUTPUT_DIR }}/..
         run: tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
 
       - uses: softprops/action-gh-release@v1
