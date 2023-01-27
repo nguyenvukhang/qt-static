@@ -18,25 +18,11 @@ jobs:
     name: Mac
     runs-on: macos-latest
     steps:
-      - run: |
+      - name: set environment variables
+        run: |
           echo "QT_SRC_DIR=${{ github.workspace }}/${{ env.QT_SRC_DIR_NAME }}">>$GITHUB_ENV
           echo "QT_OUTPUT_DIR=${{ github.workspace }}/${{ env.QT_OUTPUT_DIR_NAME }}">>$GITHUB_ENV
           echo "ASSET=qt-static-${{ runner.os }}-${{ env.QT_VERSION }}.tar.gz">>$GITHUB_ENV
-      - run: |
-          echo ${{ env.QT_OUTPUT_DIR }}
-          mkdir -p ${{ env.QT_OUTPUT_DIR }}
-          echo "hello there">>${{ env.QT_OUTPUT_DIR }}/dank-memes.txt
-
-      - run: |
-          cd ${{ env.QT_OUTPUT_DIR }}
-          cd ..
-          tar -zcvf test-${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
-
-      - uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: test-${{ env.ASSET }}
-          generate_release_notes: true
 
       - uses: actions/checkout@v3
       - run: brew install ninja
@@ -101,7 +87,9 @@ jobs:
           ninja install
 
       - run: |
-          tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR }}
+          cd ${{ env.QT_OUTPUT_DIR }}
+          cd ..
+          tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
 
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
