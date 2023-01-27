@@ -22,6 +22,7 @@ jobs:
           echo "QT_SRC_DIR=${{ github.workspace }}/${{ env.QT_SRC_DIR_NAME }}">>$GITHUB_ENV
           echo "QT_OUTPUT_DIR=${{ github.workspace }}/${{ env.QT_OUTPUT_DIR_NAME }}">>$GITHUB_ENV
           echo "ASSET=qt-static-${{ runner.os }}-${{ env.QT_VERSION }}.tar.gz">>$GITHUB_ENV
+      - run: |
           echo ${{ env.QT_OUTPUT_DIR }}
           mkdir -p ${{ env.QT_OUTPUT_DIR }}
           echo "hello there">>${{ env.QT_OUTPUT_DIR }}/dank-memes.txt
