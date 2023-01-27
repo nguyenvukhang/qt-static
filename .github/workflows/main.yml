@@ -25,7 +25,7 @@ jobs:
         run: |
           echo "QT_SRC_DIR=${{ github.workspace }}/${{ env.QT_SRC_DIR_NAME }}">>$GITHUB_ENV
           echo "QT_OUTPUT_DIR=${{ github.workspace }}/${{ env.QT_OUTPUT_DIR_NAME }}">>$GITHUB_ENV
-          echo "ASSET=qt-static-${{ matrix.os }}-${{ env.QT_VERSION }}.tar.gz">>$GITHUB_ENV
+          echo "ASSET=qt-${{ env.QT_VERSION }}:${{ matrix.os }}.tar.gz">>$GITHUB_ENV
 
       - uses: actions/checkout@v3
       - run: brew install ninja
