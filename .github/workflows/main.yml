@@ -35,11 +35,11 @@ jobs:
           -b v${{ env.QT_VERSION }} ${{ env.QT_SRC_DIR }}
 
       - run: |
-          cd ${{ QT_SRC_DIR }}
+          cd ${{ env.QT_SRC_DIR }}
           ./init-repository -f --module-subset=qtbase
 
       - run: |
-          cd ${{ QT_SRC_DIR }}
+          cd ${{ env.QT_SRC_DIR }}
           ./configure -opensource -release -static \
             -nomake examples \
             -skip qt3d \
@@ -74,11 +74,11 @@ jobs:
             -skip qtwebsockets
 
       - run: |
-          cd ${{ QT_SRC_DIR }}
+          cd ${{ env.QT_SRC_DIR }}
           ninja -j6
 
       - run: |
-          cd ${{ QT_SRC_DIR }}
+          cd ${{ env.QT_SRC_DIR }}
           ninja install
 
       - run: tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR }}
