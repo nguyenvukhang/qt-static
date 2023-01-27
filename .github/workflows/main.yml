@@ -40,7 +40,8 @@ jobs:
 
       - run: |
           cd ${{ env.QT_SRC_DIR }}
-          ./configure -opensource -release -static \
+          ./configure -prefix ${{ env.QT_OUTPUT_DIR }}
+            -opensource -release -static \
             -nomake examples \
             -skip qt3d \
             -skip qt5compat \
