@@ -16,35 +16,28 @@ env:
 jobs:
   mac:
     name: Mac
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [macos-11, macos-12]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: set environment variables
         run: |
           echo "QT_SRC_DIR=${{ github.workspace }}/${{ env.QT_SRC_DIR_NAME }}">>$GITHUB_ENV
           echo "QT_OUTPUT_DIR=${{ github.workspace }}/${{ env.QT_OUTPUT_DIR_NAME }}">>$GITHUB_ENV
-          echo "ASSET=qt-static-${{ runner.os }}-${{ env.QT_VERSION }}.tar.gz">>$GITHUB_ENV
+          echo "ASSET=qt-static-${{ matrix.os }}-${{ env.QT_VERSION }}.tar.gz">>$GITHUB_ENV
 
       - uses: actions/checkout@v3
       - run: brew install ninja
 
-      - uses: actions/cache@v3
-        with:
-          key: ${{ runner.os }}-qt
-          path: ${{ env.QT_OUTPUT_DIR }} ${{ env.QT_SRC_DIR }}
-
-      - run: mkdir ${{ env.QT_SRC_DIR }} && mkdir ${{ env.QT_OUTPUT_DIR }}
-
-      - run: |
-          git clone https://code.qt.io/qt/qt5.git \
+      - run: git clone https://code.qt.io/qt/qt5.git \
           -b v${{ env.QT_VERSION }} ${{ env.QT_SRC_DIR }}
 
-      - run: |
-          cd ${{ env.QT_SRC_DIR }}
-          ./init-repository -f --module-subset=qtbase
+      - working-directory: ${{ env.QT_SRC_DIR }}
+        run: ./init-repository -f --module-subset=qtbase
 
-      - run: |
-          cd ${{ env.QT_SRC_DIR }}
-          ./configure -prefix ${{ env.QT_OUTPUT_DIR }} \
+      - working-directory: ${{ env.QT_SRC_DIR }}
+        run: ./configure -prefix ${{ env.QT_OUTPUT_DIR }} \
             -opensource -release -static \
             -nomake examples \
             -skip qt3d \
@@ -78,18 +71,14 @@ jobs:
             -skip qttools \
             -skip qtwebsockets
 
-      - run: |
-          cd ${{ env.QT_SRC_DIR }}
-          ninja -j6
+      - working-directory: ${{ env.QT_SRC_DIR }}
+        run: ninja -j6
 
-      - run: |
-          cd ${{ env.QT_SRC_DIR }}
-          ninja install
+      - working-directory: ${{ env.QT_SRC_DIR }}
+        run: ninja install
 
-      - run: |
-          cd ${{ env.QT_OUTPUT_DIR }}
-          cd ..
-          tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
+      - working-directory: ${{ env.QT_OUTPUT_DIR }}
+        run: tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
 
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
