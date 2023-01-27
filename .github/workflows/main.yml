@@ -9,8 +9,9 @@ permissions:
   contents: write
 
 env:
-  QT_SRC_DIR: qt_src
-  QT_OUTPUT_DIR: qt_output
+  QT_OUTPUT_DIR_NAME: qt_output
+  QT_SRC_DIR: ${{ github.workspace }}/qt_src
+  QT_OUTPUT_DIR: ${{ github.workspace }}/${{ env.QT_OUTPUT_DIR_NAME }}
   QT_VERSION: 6.4.2
 
 jobs:
@@ -20,6 +21,21 @@ jobs:
     steps:
       - run: |
           echo "ASSET=qt-static-${{ runner.os }}-${{ env.QT_VERSION }}.tar.gz">>$GITHUB_ENV
+          echo ${{ env.QT_OUTPUT_DIR }}
+          mkdir -p ${{ env.QT_OUTPUT_DIR }}
+          echo "hello there">>${{ env.QT_OUTPUT_DIR }}/dank-memes.txt
+
+      - run: |
+          cd ${{ env.QT_OUTPUT_DIR }}
+          cd ..
+          tar -zcvf test-${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: test-${{ env.ASSET }}
+          generate_release_notes: true
+
       - uses: actions/checkout@v3
       - run: brew install ninja
 
@@ -82,7 +98,8 @@ jobs:
           cd ${{ env.QT_SRC_DIR }}
           ninja install
 
-      - run: tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR }}
+      - run: |
+          tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR }}
 
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
