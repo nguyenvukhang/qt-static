@@ -18,8 +18,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-11, macos-12, windows-2019]
-        version: [6.2.0, 6.2.1, 6.2.2, 6.2.3, 6.2.4, 6.3.0, 6.3.1, 6.3.2, 6.4.0, 6.4.1, 6.4.2]
+        os: [windows-2019]
+        version: [6.2.0, 6.2.1, 6.2.2, 6.2.3, 6.2.4]
+        # os: [macos-11, macos-12, windows-2019]
+        # version: [6.2.0, 6.2.1, 6.2.2, 6.2.3, 6.2.4, 6.3.0, 6.3.1, 6.3.2, 6.4.0, 6.4.1, 6.4.2]
     runs-on: ${{ matrix.os }}
     steps:
       # set environment variables
@@ -37,20 +39,21 @@ jobs:
           Add-Content $env:GITHUB_PATH 'C:/hostedtoolcache/windows/Ruby/2.5.9/x64/bin'
           Add-Content $env:GITHUB_PATH 'C:/hostedtoolcache/windows/Python/3.7.9/x64/bin'
           Add-Content $env:GITHUB_PATH 'C:/Program Files/CMake/bin'
+          Add-Content $env:GITHUB_PATH 'C:/ProgramData/chocolatey/lib/zstandard/tools'
           Add-Content $env:GITHUB_PATH 'C:/ProgramData/chocolatey/lib/mingw/tools/install/mingw64/bin'
         if: startsWith(matrix.os , 'windows')
 
       # install ninja
       - run: brew install ninja
         if: startsWith(matrix.os, 'macos')
-      - run: choco install ninja mingw
+      - run: choco install ninja mingw zstandard
         if: startsWith(matrix.os, 'windows')
 
       - run: git clone https://code.qt.io/qt/qt5.git -b v${{ matrix.version }} ${{ env.QT_SRC_DIR }}
 
       - run: perl init-repository -f --module-subset=qtbase
         working-directory: ${{ env.QT_SRC_DIR }}
-      
+
       - run: ./configure -prefix ${{ env.QT_OUTPUT_DIR }} ${{ env.QT_CFG_ARGS }}
         working-directory: ${{ env.QT_SRC_DIR }}
         if: startsWith(matrix.os, 'windows') == false
@@ -62,13 +65,13 @@ jobs:
           -- -G 'MinGW Makefiles'
         working-directory: ${{ env.QT_SRC_DIR }}
         if: startsWith(matrix.os, 'windows')
-      
+
       - run: ninja -j6 && ninja install
         working-directory: ${{ env.QT_SRC_DIR }}
-      
+
       - run: tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
         working-directory: ${{ env.QT_OUTPUT_DIR }}/..
-      
+
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
