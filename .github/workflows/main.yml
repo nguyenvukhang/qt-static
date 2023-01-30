@@ -11,77 +11,64 @@ permissions:
 env:
   QT_OUTPUT_DIR_NAME: qt_output
   QT_SRC_DIR_NAME: qt_src
-  QT_VERSION: 6.4.2
+  QT_CFG_ARGS: -opensource -release -static -nomake examples -nomake tests -skip qt3d -skip qttranslations -skip qt5compat -skip qtactiveqt -skip qtcharts -skip qtcoap -skip qtconnectivity -skip qtdatavis3d -skip qtdeclarative -skip qtdoc -skip qthttpserver -skip qtlanguageserver -skip qtlottie -skip qtmqtt -skip qtmultimedia -skip qtnetworkauth -skip qtopcua -skip qtpositioning -skip qtquick3d -skip qtquick3dphysics -skip qtquicktimeline -skip qtremoteobjects -skip qtscxml -skip qtsensors -skip qtserialbus -skip qtserialport -skip qtshadertools -skip qtspeech -skip qtsvg -skip qttools -skip qtwebsockets
 
 jobs:
-  mac:
-    name: Mac
+  build:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-11, macos-12]
+        os: [macos-11, macos-12, windows-2019, windows-2022]
+        version: [6.2.4]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: set environment variables
-        run: |
+      # set environment variables
+      - run: |
           echo "QT_SRC_DIR=${{ github.workspace }}/${{ env.QT_SRC_DIR_NAME }}">>$GITHUB_ENV
           echo "QT_OUTPUT_DIR=${{ github.workspace }}/${{ env.QT_OUTPUT_DIR_NAME }}">>$GITHUB_ENV
-          echo "ASSET=qt-${{ env.QT_VERSION }}:${{ matrix.os }}.tar.gz">>$GITHUB_ENV
+          echo "ASSET=qt-${{ matrix.version }}-${{ matrix.os }}.tar.gz">>$GITHUB_ENV
+        if: startsWith(matrix.os, 'windows') == false
+      - run: |
+          echo "QT_SRC_DIR=${{ github.workspace }}/${{ env.QT_SRC_DIR_NAME }}">>$env:GITHUB_ENV
+          echo "QT_OUTPUT_DIR=${{ github.workspace }}/${{ env.QT_OUTPUT_DIR_NAME }}">>$env:GITHUB_ENV
+          echo "ASSET=qt-${{ matrix.version }}-${{ matrix.os }}.tar.gz">>$env:GITHUB_ENV
+          Add-Content $env:GITHUB_PATH 'C:/ProgramData/Chocolatey/bin'
+          Add-Content $env:GITHUB_PATH 'C:/Strawberry/perl/bin'
+          Add-Content $env:GITHUB_PATH 'C:/hostedtoolcache/windows/Ruby/2.5.9/x64/bin'
+          Add-Content $env:GITHUB_PATH 'C:/hostedtoolcache/windows/Python/3.7.9/x64/bin'
+          Add-Content $env:GITHUB_PATH 'C:/Program Files/CMake/bin'
+          Add-Content $env:GITHUB_PATH 'C:/ProgramData/chocolatey/lib/mingw/tools/install/mingw64/bin'
+        if: startsWith(matrix.os , 'windows')
 
-      - uses: actions/checkout@v3
+      # install ninja
       - run: brew install ninja
+        if: startsWith(matrix.os, 'macos')
+      - run: choco install ninja mingw
+        if: startsWith(matrix.os, 'windows')
+
+      - run: git clone https://code.qt.io/qt/qt5.git -b v${{ matrix.version }} ${{ env.QT_SRC_DIR }}
+
+      - run: perl init-repository --module-subset=qtbase
+        working-directory: ${{ env.QT_SRC_DIR }}
+      
+      - run: ./configure -prefix ${{ env.QT_OUTPUT_DIR }} ${{ env.QT_CFG_ARGS }}
+        working-directory: ${{ env.QT_SRC_DIR }}
+        if: startsWith(matrix.os, 'windows') == false
 
       - run: |
-          git clone https://code.qt.io/qt/qt5.git \
-          -b v${{ env.QT_VERSION }} ${{ env.QT_SRC_DIR }}
-
-      - working-directory: ${{ env.QT_SRC_DIR }}
-        run: ./init-repository -f --module-subset=qtbase
-
-      - working-directory: ${{ env.QT_SRC_DIR }}
-        run: ./configure -prefix ${{ env.QT_OUTPUT_DIR }} \
-            -opensource -release -static \
-            -nomake examples \
-            -skip qt3d \
-            -skip qt5compat \
-            -skip qtactiveqt \
-            -skip qtcharts \
-            -skip qtcoap \
-            -skip qtconnectivity \
-            -skip qtdatavis3d \
-            -skip qtdeclarative \
-            -skip qtdoc \
-            -skip qthttpserver \
-            -skip qtlanguageserver \
-            -skip qtlottie \
-            -skip qtmqtt \
-            -skip qtmultimedia \
-            -skip qtnetworkauth \
-            -skip qtopcua \
-            -skip qtpositioning \
-            -skip qtquick3d \
-            -skip qtquick3dphysics \
-            -skip qtquicktimeline \
-            -skip qtremoteobjects \
-            -skip qtscxml \
-            -skip qtsensors \
-            -skip qtserialbus \
-            -skip qtserialport \
-            -skip qtshadertools \
-            -skip qtspeech \
-            -skip qtsvg \
-            -skip qttools \
-            -skip qtwebsockets
-
-      - working-directory: ${{ env.QT_SRC_DIR }}
-        run: ninja -j6
-
-      - working-directory: ${{ env.QT_SRC_DIR }}
-        run: ninja install
-
-      - working-directory: ${{ env.QT_OUTPUT_DIR }}/..
-        run: tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
-
+          ./configure.bat -prefix ${{ env.QT_OUTPUT_DIR }} `
+          ${{ env.QT_CFG_ARGS }} `
+          -platform win32-g++ `
+          -- -G 'MinGW Makefiles'
+        working-directory: ${{ env.QT_SRC_DIR }}
+        if: startsWith(matrix.os, 'windows')
+      
+      - run: ninja -j6 && ninja install
+        working-directory: ${{ env.QT_SRC_DIR }}
+      
+      - run: tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
+        working-directory: ${{ env.QT_OUTPUT_DIR }}/..
+      
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
