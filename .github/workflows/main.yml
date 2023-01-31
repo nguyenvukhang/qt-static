@@ -2,6 +2,8 @@ name: release
 
 on:
   push:
+    branches:
+      - dev
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+**"
 
@@ -9,8 +11,8 @@ permissions:
   contents: write
 
 env:
-  QT_OUTPUT_DIR_NAME: qt_output
-  QT_SRC_DIR_NAME: qt_src
+  QT_OUTPUT_DIR: qt_output
+  QT_SRC_DIR: qt_src
   QT_CFG_ARGS: -opensource -release -static -nomake examples -nomake tests -skip qt3d -skip qttranslations -skip qt5compat -skip qtactiveqt -skip qtcharts -skip qtcoap -skip qtconnectivity -skip qtdatavis3d -skip qtdeclarative -skip qtdoc -skip qthttpserver -skip qtlanguageserver -skip qtlottie -skip qtmqtt -skip qtmultimedia -skip qtnetworkauth -skip qtopcua -skip qtpositioning -skip qtquick3d -skip qtquick3dphysics -skip qtquicktimeline -skip qtremoteobjects -skip qtscxml -skip qtsensors -skip qtserialbus -skip qtserialport -skip qtshadertools -skip qtspeech -skip qtsvg -skip qttools -skip qtwebsockets
 
 jobs:
@@ -18,8 +20,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019]
-        version: [6.2.0, 6.2.1, 6.2.2, 6.2.3, 6.2.4]
+        os: [windows-2019, windows-2022]
+        version: [6.2.0]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -27,38 +29,37 @@ jobs:
     steps:
       - uses: msys2/setup-msys2@v2
         with:
-          install: git make
+          path-type: strict
+          install: git make cmake ruby python ninja gcc
+          msystem: UCRT64
 
-      # set environment variables
-      - run: echo "$PWD"
-      - run: |
-          echo "QT_SRC_DIR=$PWD/${{ env.QT_SRC_DIR_NAME }}">>$GITHUB_ENV
-          echo "QT_OUTPUT_DIR=$PWD/${{ env.QT_OUTPUT_DIR_NAME }}">>$GITHUB_ENV
-
+      - name: Set environment variables
+        run: |
+          echo "QT_SRC_DIR=$PWD/${{ env.QT_SRC_DIR }}">>$GITHUB_ENV
+          echo "QT_OUTPUT_DIR=$PWD/${{ env.QT_OUTPUT_DIR }}">>$GITHUB_ENV
           echo "ASSET=qt-${{ matrix.version }}-${{ matrix.os }}.tar.gz">>$GITHUB_ENV
-          echo 'C:/ProgramData/Chocolatey/bin' $GITHUB_PATH
-          echo 'C:/Strawberry/perl/bin' $GITHUB_PATH
-          echo 'C:/hostedtoolcache/windows/Ruby/2.5.9/x64/bin' $GITHUB_PATH
-          echo 'C:/hostedtoolcache/windows/Python/3.7.9/x64/bin' $GITHUB_PATH
-          echo 'C:/Program Files/CMake/bin' $GITHUB_PATH
 
-      - run: git clone https://code.qt.io/qt/qt5.git -b v${{ matrix.version }} ${{ env.QT_SRC_DIR }}
+      - name: Get initialized source
+        run: |
+          curl -fLo src.tar.gz https://github.com/nguyenvukhang/qt-source/releases/download/v0.0.1/qt-${{ matrix.os }}-${{ matrix.version }}.tar.gz
+          mkdir qt_src
+          mv src.tar.gz qt_src
+          cd qt_src
+          tar -xzf src.tar.gz
+          rm -f src.tar.gz
 
-      - run: |
+      - name: Configure
+        run: |
           cd ${{ env.QT_SRC_DIR }}
-          perl init-repository -f --module-subset=qtbase
+          ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-g++ -- -DCMAKE_SYSTEM_NAME=Generic
 
-      - run: |
-          cd ${{ env.QT_SRC_DIR }}
-          ./configure -prefix ${{ env.QT_OUTPUT_DIR }} ${{ env.QT_CFG_ARGS }} -platform win32-g++
-
-      - run: |
-          cd ${{ env.QT_SRC_DIR }}
+      - name: Build
+        run: |
+          cd qt_src
           ninja -j6 && ninja install
 
-      - run: |
-          cd ${{ env.QT_OUTPUT_DIR }}/..
-          tar -zcvf ${{ env.ASSET }} ${{ env.QT_OUTPUT_DIR_NAME }}
+      - name: Compress for shipping
+        run: cd qt_output && tar -zcvf ${{ env.ASSET }} *
 
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
