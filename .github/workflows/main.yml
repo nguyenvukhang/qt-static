@@ -24,6 +24,11 @@ jobs:
         version: [6.2.0]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Install MSVC 2022
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - run: choco install ninja
 
       - name: Set environment variables
@@ -38,7 +43,6 @@ jobs:
           echo 'C:/hostedtoolcache/windows/Python/3.7.9/x64/bin' >>$GITHUB_PATH
           echo 'C:/Program Files/CMake/bin' >>$GITHUB_PATH
           echo 'C:/ProgramData/chocolatey/lib/zstandard/tools' >>$GITHUB_PATH
-          echo 'C:/ProgramData/chocolatey/lib/mingw/tools/install/mingw64/bin' >>$GITHUB_PATH
 
       - name: Clone from source
         run: git clone https://code.qt.io/qt/qt5.git -b v${{ matrix.version }} qt_src
@@ -49,7 +53,7 @@ jobs:
       - name: Configure
         run: |
           cd qt_src
-          ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-msvc -- -DCMAKE_SYSTEM_NAME=Generic -G'Visual Studio 16 2019' -A x64
+          ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-msvc -- -DCMAKE_SYSTEM_NAME=Generic
 
       - name: Build
         run: |
