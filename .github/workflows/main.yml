@@ -48,7 +48,7 @@ jobs:
       - name: Configure
         run: |
           cd ${{ env.QT_SRC_DIR }}
-          ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-g++ -- -DCMAKE_SYSTEM_NAME=Generic
+          ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-msvc -- -DCMAKE_SYSTEM_NAME=Generic
 
       - name: Build
         run: |
