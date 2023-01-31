@@ -23,21 +23,22 @@ jobs:
         os: [windows-2019, windows-2022]
         version: [6.2.0]
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: msys2 {0}
     steps:
-      - uses: msys2/setup-msys2@v2
-        with:
-          path-type: strict
-          install: git make cmake ruby python ninja gcc base-devel mingw-w64-ucrt-x86_64-mesa
-          msystem: UCRT64
+      - run: choco install ninja
 
       - name: Set environment variables
+        shell: bash
         run: |
           echo "QT_SRC_DIR=$PWD/${{ env.QT_SRC_DIR }}">>$GITHUB_ENV
           echo "QT_OUTPUT_DIR=$PWD/${{ env.QT_OUTPUT_DIR }}">>$GITHUB_ENV
           echo "ASSET=qt-${{ matrix.version }}-${{ matrix.os }}.tar.gz">>$GITHUB_ENV
+          echo 'C:/ProgramData/Chocolatey/bin' >>$GITHUB_PATH
+          echo 'C:/Strawberry/perl/bin' >>$GITHUB_PATH
+          echo 'C:/hostedtoolcache/windows/Ruby/2.5.9/x64/bin' >>$GITHUB_PATH
+          echo 'C:/hostedtoolcache/windows/Python/3.7.9/x64/bin' >>$GITHUB_PATH
+          echo 'C:/Program Files/CMake/bin' >>$GITHUB_PATH
+          echo 'C:/ProgramData/chocolatey/lib/zstandard/tools' >>$GITHUB_PATH
+          echo 'C:/ProgramData/chocolatey/lib/mingw/tools/install/mingw64/bin' >>$GITHUB_PATH
 
       - name: Clone from source
         run: git clone https://code.qt.io/qt/qt5.git -b v${{ matrix.version }} qt_src
@@ -47,8 +48,8 @@ jobs:
 
       - name: Configure
         run: |
-          cd ${{ env.QT_SRC_DIR }}
-          ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-msvc -- -DCMAKE_SYSTEM_NAME=Generic
+          cd qt_src
+          ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-msvc -- -DCMAKE_SYSTEM_NAME=Generic -G'Visual Studio 16 2019' -A x64
 
       - name: Build
         run: |
