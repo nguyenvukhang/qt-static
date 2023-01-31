@@ -49,9 +49,9 @@ jobs:
         run: cd qt_src && perl init-repository --module-subset=qtbase
 
       - name: Configure
+        shell: bash
         run: |
           cd qt_src
-          cmd.exe 'C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvarsall.bat' amd64
           ./configure -no-opengl -prefix qt_output ${{ env.QT_CFG_ARGS }} -platform win32-msvc -- -DCMAKE_SYSTEM_NAME=Generic
 
       - name: Build
