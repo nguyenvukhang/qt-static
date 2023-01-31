@@ -30,7 +30,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           path-type: strict
-          install: git make cmake ruby python ninja gcc
+          install: git make cmake ruby python ninja gcc base-devel mingw-w64-ucrt-x86_64-mesa
           msystem: UCRT64
 
       - name: Set environment variables
@@ -39,14 +39,11 @@ jobs:
           echo "QT_OUTPUT_DIR=$PWD/${{ env.QT_OUTPUT_DIR }}">>$GITHUB_ENV
           echo "ASSET=qt-${{ matrix.version }}-${{ matrix.os }}.tar.gz">>$GITHUB_ENV
 
-      - name: Get initialized source
-        run: |
-          curl -fLo src.tar.gz https://github.com/nguyenvukhang/qt-source/releases/download/v0.0.1/qt-${{ matrix.os }}-${{ matrix.version }}.tar.gz
-          mkdir qt_src
-          mv src.tar.gz qt_src
-          cd qt_src
-          tar -xzf src.tar.gz
-          rm -f src.tar.gz
+      - name: Clone from source
+        run: git clone https://code.qt.io/qt/qt5.git -b v${{ matrix.version }} qt_src
+
+      - name: Initialize source
+        run: cd qt_src && perl init-repository --module-subset=qtbase
 
       - name: Configure
         run: |
